@@ -131,6 +131,26 @@ canvas {
   display: none;
 }
 
+.play-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(7, 20, 15, 0.82);
+  border: 1px solid var(--line);
+  color: var(--text);
+  font-size: 0.85rem;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.play-hint.hidden {
+  display: none;
+}
+
 .card {
   width: min(320px, 100%);
   padding: 22px 20px 18px;

@@ -11,6 +11,7 @@ const overlayTitle = document.querySelector<HTMLHeadingElement>("#overlay-title"
 const overlayMsg = document.querySelector<HTMLParagraphElement>("#overlay-msg")!;
 const overlayScore = document.querySelector<HTMLParagraphElement>("#overlay-score")!;
 const overlayHint = document.querySelector<HTMLParagraphElement>("#overlay-hint")!;
+const playHint = document.querySelector<HTMLParagraphElement>("#play-hint")!;
 const primaryBtn = document.querySelector<HTMLButtonElement>("#primary-btn")!;
 const pauseBtn = document.querySelector<HTMLButtonElement>("#pause-btn")!;
 const scoreEl = document.querySelector<HTMLElement>("#score")!;
@@ -29,6 +30,10 @@ function updateHud(): void {
   highEl.textContent = String(game.highScore);
   lengthEl.textContent = String(game.snake.length);
   pauseBtn.textContent = game.paused ? "繼續" : "暫停";
+  playHint.classList.toggle(
+    "hidden",
+    !game.started || !game.alive || game.paused || !game.awaitingInput,
+  );
 }
 
 function showStart(): void {
@@ -37,7 +42,7 @@ function showStart(): void {
   overlayTitle.textContent = "貪食蛇";
   overlayMsg.textContent = "吃掉發光果實變長，撞牆或咬到自己就結束。";
   overlayScore.classList.add("hidden");
-  overlayHint.textContent = "方向鍵或 WASD 移動 · 空白鍵暫停";
+  overlayHint.textContent = "開始後先按方向鍵或螢幕按鈕，蛇才會出發";
   primaryBtn.textContent = "開始遊戲";
 }
 
@@ -103,9 +108,13 @@ function onDirection(dir: Direction): void {
   if (game.paused) {
     game.togglePause();
     hideOverlay();
-    updateHud();
   }
+  const wasWaiting = game.awaitingInput;
   game.queueDirection(dir);
+  if (wasWaiting && !game.awaitingInput) {
+    lastTick = performance.now() - game.speedMs();
+  }
+  updateHud();
 }
 
 function loop(now: number): void {

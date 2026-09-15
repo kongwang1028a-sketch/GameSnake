@@ -27,12 +27,12 @@ export class SnakeGame {
   alive = true;
   started = false;
   paused = false;
+  awaitingInput = false;
 
   private pending: Direction[] = [];
 
   constructor() {
-    const saved = Number(localStorage.getItem(HIGH_SCORE_KEY) ?? 0);
-    this.highScore = Number.isFinite(saved) ? saved : 0;
+    this.highScore = readHighScore();
     this.reset();
   }
 
@@ -48,12 +48,14 @@ export class SnakeGame {
     this.score = 0;
     this.alive = true;
     this.paused = false;
+    this.awaitingInput = true;
     this.placeFood();
   }
 
   start(): void {
     this.reset();
     this.started = true;
+    this.awaitingInput = true;
   }
 
   togglePause(): void {
@@ -63,6 +65,12 @@ export class SnakeGame {
 
   queueDirection(next: Direction): void {
     if (!this.started || !this.alive || this.paused) return;
+    if (this.awaitingInput) {
+      if (next === OPPOSITE[this.direction]) return;
+      this.direction = next;
+      this.awaitingInput = false;
+      return;
+    }
     const last = this.pending.at(-1) ?? this.direction;
     if (next === last || next === OPPOSITE[last]) return;
     if (this.pending.length >= 2) return;
@@ -70,7 +78,7 @@ export class SnakeGame {
   }
 
   tick(): "move" | "eat" | "die" | "idle" {
-    if (!this.started || !this.alive || this.paused) return "idle";
+    if (!this.started || !this.alive || this.paused || this.awaitingInput) return "idle";
 
     while (this.pending.length > 0) {
       const next = this.pending.shift()!;
@@ -105,7 +113,7 @@ export class SnakeGame {
       this.score += 10;
       if (this.score > this.highScore) {
         this.highScore = this.score;
-        localStorage.setItem(HIGH_SCORE_KEY, String(this.highScore));
+        writeHighScore(this.highScore);
       }
       this.placeFood();
       return "eat";
@@ -135,5 +143,22 @@ export class SnakeGame {
       }
     }
     this.food = free[Math.floor(Math.random() * free.length)] ?? { x: 0, y: 0 };
+  }
+}
+
+function readHighScore(): number {
+  try {
+    const saved = Number(globalThis.localStorage?.getItem(HIGH_SCORE_KEY) ?? 0);
+    return Number.isFinite(saved) ? saved : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function writeHighScore(score: number): void {
+  try {
+    globalThis.localStorage?.setItem(HIGH_SCORE_KEY, String(score));
+  } catch {
+    // Ignore storage failures in private mode or non-browser tests.
   }
 }
