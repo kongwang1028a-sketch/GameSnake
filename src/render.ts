@@ -1,14 +1,13 @@
-import type { Direction, Point, SnakeGame } from "./game";
+import type { Direction, SnakeGame } from "./game";
+import { fruitByKind } from "./params.ts";
 
 const COLORS = {
   board: "#0b1c14",
+  rushBoard: "#1a120c",
   grid: "rgba(124, 255, 107, 0.06)",
   snakeHead: "#c8ff8a",
-  snakeBody: "#4ad35a",
   snakeTail: "#217a38",
-  snakeStroke: "#0b1c14",
-  food: "#ff5c7a",
-  foodGlow: "rgba(255, 92, 122, 0.45)",
+  shieldHead: "#d7dcff",
   eye: "#07140f",
 };
 
@@ -22,7 +21,7 @@ export class Renderer {
   }
 
   resize(): void {
-    const size = Math.min(520, Math.floor(window.innerWidth - 32), Math.floor(window.innerHeight - 280));
+    const size = Math.min(520, Math.floor(window.innerWidth - 32), Math.floor(window.innerHeight - 320));
     const next = Math.max(280, size);
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     this.canvas.style.width = `${next}px`;
@@ -36,17 +35,17 @@ export class Renderer {
     const cssSize = this.canvas.clientWidth;
     const cell = cssSize / game.gridSize;
     this.ctx.clearRect(0, 0, cssSize, cssSize);
-    this.drawBoard(cssSize, cell, game.gridSize);
-    this.drawFood(game.food, cell, now);
-    this.drawSnake(game.snake, game.direction, cell, game.alive);
+    this.drawBoard(cssSize, cell, game.gridSize, game.jackpotTicks > 0);
+    this.drawFood(game, cell, now);
+    this.drawSnake(game, cell);
   }
 
-  private drawBoard(size: number, cell: number, gridSize: number): void {
-    this.ctx.fillStyle = COLORS.board;
+  private drawBoard(size: number, cell: number, gridSize: number, rushing: boolean): void {
+    this.ctx.fillStyle = rushing ? COLORS.rushBoard : COLORS.board;
     this.roundRect(0, 0, size, size, 18);
     this.ctx.fill();
 
-    this.ctx.strokeStyle = COLORS.grid;
+    this.ctx.strokeStyle = rushing ? "rgba(255, 157, 61, 0.12)" : COLORS.grid;
     this.ctx.lineWidth = 1;
     this.ctx.beginPath();
     for (let i = 1; i < gridSize; i += 1) {
@@ -58,18 +57,19 @@ export class Renderer {
     this.ctx.stroke();
   }
 
-  private drawFood(food: Point, cell: number, now: number): void {
+  private drawFood(game: SnakeGame, cell: number, now: number): void {
+    const spec = fruitByKind(game.food.kind);
     const pulse = 0.85 + Math.sin(now / 180) * 0.15;
-    const cx = food.x * cell + cell / 2;
-    const cy = food.y * cell + cell / 2;
-    const radius = (cell * 0.28) * pulse;
+    const cx = game.food.x * cell + cell / 2;
+    const cy = game.food.y * cell + cell / 2;
+    const radius = cell * (game.food.kind === "jackpot" ? 0.32 : 0.28) * pulse;
 
-    this.ctx.fillStyle = COLORS.foodGlow;
+    this.ctx.fillStyle = spec.glow;
     this.ctx.beginPath();
     this.ctx.arc(cx, cy, radius * 1.9, 0, Math.PI * 2);
     this.ctx.fill();
 
-    this.ctx.fillStyle = COLORS.food;
+    this.ctx.fillStyle = spec.color;
     this.ctx.beginPath();
     this.ctx.arc(cx, cy, radius, 0, Math.PI * 2);
     this.ctx.fill();
@@ -80,24 +80,25 @@ export class Renderer {
     this.ctx.fill();
   }
 
-  private drawSnake(snake: Point[], direction: Direction, cell: number, alive: boolean): void {
-    snake.forEach((part, index) => {
-      const t = snake.length === 1 ? 0 : index / (snake.length - 1);
-      const color = mix(COLORS.snakeHead, COLORS.snakeTail, t);
+  private drawSnake(game: SnakeGame, cell: number): void {
+    const shielded = game.shields > 0;
+    game.snake.forEach((part, index) => {
+      const t = game.snake.length === 1 ? 0 : index / (game.snake.length - 1);
+      const color = mix(shielded ? COLORS.shieldHead : COLORS.snakeHead, COLORS.snakeTail, t);
       const pad = index === 0 ? cell * 0.08 : cell * 0.14;
       const x = part.x * cell + pad;
       const y = part.y * cell + pad;
       const size = cell - pad * 2;
-      this.ctx.fillStyle = alive ? color : "#5a6b5e";
+      this.ctx.fillStyle = game.alive ? color : "#5a6b5e";
       this.roundRect(x, y, size, size, size * 0.28);
       this.ctx.fill();
     });
 
-    const head = snake[0];
+    const head = game.snake[0];
     const hx = head.x * cell + cell / 2;
     const hy = head.y * cell + cell / 2;
     const eyeOffset = cell * 0.16;
-    const [ex, ey] = eyeShift(direction, eyeOffset);
+    const [ex, ey] = eyeShift(game.direction, eyeOffset);
     this.ctx.fillStyle = COLORS.eye;
     this.ctx.beginPath();
     this.ctx.arc(hx + ex - cell * 0.1, hy + ey, cell * 0.06, 0, Math.PI * 2);

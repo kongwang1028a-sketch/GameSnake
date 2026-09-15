@@ -17,6 +17,9 @@ const pauseBtn = document.querySelector<HTMLButtonElement>("#pause-btn")!;
 const scoreEl = document.querySelector<HTMLElement>("#score")!;
 const highEl = document.querySelector<HTMLElement>("#high")!;
 const lengthEl = document.querySelector<HTMLElement>("#length")!;
+const shieldsEl = document.querySelector<HTMLElement>("#shields")!;
+const statusEl = document.querySelector<HTMLElement>("#status")!;
+const pickupEl = document.querySelector<HTMLParagraphElement>("#pickup")!;
 
 const game = new SnakeGame();
 const renderer = new Renderer(canvas);
@@ -29,6 +32,8 @@ function updateHud(): void {
   scoreEl.textContent = String(game.score);
   highEl.textContent = String(game.highScore);
   lengthEl.textContent = String(game.snake.length);
+  shieldsEl.textContent = String(game.shields);
+  statusEl.textContent = game.statusLabel();
   pauseBtn.textContent = game.paused ? "繼續" : "暫停";
   playHint.classList.toggle(
     "hidden",
@@ -38,9 +43,9 @@ function updateHud(): void {
 
 function showStart(): void {
   overlay.classList.remove("hidden");
-  overlayKicker.textContent = "經典街機";
+  overlayKicker.textContent = "機率街機";
   overlayTitle.textContent = "貪食蛇";
-  overlayMsg.textContent = "吃掉發光果實變長，撞牆或咬到自己就結束。";
+  overlayMsg.textContent = "果實用權重抽出。普通、金色、加速、護盾、大獎效果都不同。";
   overlayScore.classList.add("hidden");
   overlayHint.textContent = "開始後先按方向鍵或螢幕按鈕，蛇才會出發";
   primaryBtn.textContent = "開始遊戲";
@@ -71,6 +76,17 @@ function showGameOver(): void {
 
 function hideOverlay(): void {
   overlay.classList.add("hidden");
+}
+
+function showPickup(): void {
+  const pickup = game.lastPickup;
+  if (!pickup) return;
+  pickupEl.textContent = `${pickup.name} +${pickup.score}`;
+  pickupEl.style.color = pickup.color;
+  pickupEl.classList.remove("hidden");
+  window.clearTimeout(Number(pickupEl.dataset.timer));
+  const timer = window.setTimeout(() => pickupEl.classList.add("hidden"), 900);
+  pickupEl.dataset.timer = String(timer);
 }
 
 function startGame(): void {
@@ -122,7 +138,10 @@ function loop(now: number): void {
   if (game.started && game.alive && !game.paused && now - lastTick >= game.speedMs()) {
     const result = game.tick();
     lastTick = now;
-    if (result === "eat") audio.eat();
+    if (result === "eat") {
+      audio.eat(game.lastPickup?.kind ?? "normal");
+      showPickup();
+    }
     if (result === "die") {
       audio.die();
       showGameOver();

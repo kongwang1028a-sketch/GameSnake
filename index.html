@@ -31,6 +31,14 @@
             <span>長度</span>
             <strong id="length">3</strong>
           </div>
+          <div class="stat">
+            <span>護盾</span>
+            <strong id="shields">0</strong>
+          </div>
+          <div class="stat">
+            <span>狀態</span>
+            <strong id="status">一般</strong>
+          </div>
         </div>
       </header>
 
@@ -39,17 +47,29 @@
           <canvas id="board" width="480" height="480" aria-label="貪食蛇遊戲畫面"></canvas>
           <div id="overlay" class="overlay" role="dialog" aria-modal="true">
             <div class="card">
-              <p class="kicker" id="overlay-kicker">經典街機</p>
+              <p class="kicker" id="overlay-kicker">機率街機</p>
               <h2 id="overlay-title">貪食蛇</h2>
-              <p id="overlay-msg">吃掉發光果實變長，撞牆或咬到自己就結束。</p>
+              <p id="overlay-msg">果實用權重抽出。普通、金色、加速、護盾、大獎效果都不同。</p>
               <p id="overlay-score" class="overlay-score hidden"></p>
               <button id="primary-btn" type="button">開始遊戲</button>
               <p class="hint" id="overlay-hint">開始後先按方向鍵，蛇才會出發</p>
             </div>
           </div>
           <p id="play-hint" class="play-hint hidden">按方向鍵或 WASD 開始移動</p>
+          <p id="pickup" class="pickup hidden"></p>
         </div>
       </main>
+
+      <section class="paytable" aria-label="果實獎池">
+        <h2>果實獎池</h2>
+        <ul>
+          <li><i class="dot normal"></i>普通 70% · 10 分</li>
+          <li><i class="dot gold"></i>金色 18% · 50 分</li>
+          <li><i class="dot speed"></i>加速 7% · 短暫變快</li>
+          <li><i class="dot shield"></i>護盾 4% · 可擋一次撞牆</li>
+          <li><i class="dot jackpot"></i>大獎 1% · 200 分並狂暴</li>
+        </ul>
+      </section>
 
       <nav class="dpad" aria-label="方向控制">
         <button type="button" data-dir="up" class="pad pad-up">▲</button>

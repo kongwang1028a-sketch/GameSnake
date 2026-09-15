@@ -1,5 +1,8 @@
+import { FRUIT_TABLE, GAME_PARAMS, fruitByKind, pickWeighted, type FruitKind, type FruitSpec } from "./params.ts";
+
 export type Direction = "up" | "down" | "left" | "right";
 export type Point = { x: number; y: number };
+export type Food = Point & { kind: FruitKind };
 
 const OPPOSITE: Record<Direction, Direction> = {
   up: "down",
@@ -18,20 +21,26 @@ const DELTA: Record<Direction, Point> = {
 const HIGH_SCORE_KEY = "snake-high-score";
 
 export class SnakeGame {
-  readonly gridSize = 20;
+  readonly gridSize = GAME_PARAMS.gridSize;
   snake: Point[] = [];
   direction: Direction = "right";
-  food: Point = { x: 10, y: 10 };
+  food: Food = { x: 10, y: 10, kind: "normal" };
   score = 0;
   highScore = 0;
   alive = true;
   started = false;
   paused = false;
   awaitingInput = false;
+  shields = 0;
+  hasteTicks = 0;
+  jackpotTicks = 0;
+  lastPickup: FruitSpec | null = null;
 
   private pending: Direction[] = [];
+  private readonly random: () => number;
 
-  constructor() {
+  constructor(random: () => number = Math.random) {
+    this.random = random;
     this.highScore = readHighScore();
     this.reset();
   }
@@ -49,6 +58,10 @@ export class SnakeGame {
     this.alive = true;
     this.paused = false;
     this.awaitingInput = true;
+    this.shields = 0;
+    this.hasteTicks = 0;
+    this.jackpotTicks = 0;
+    this.lastPickup = null;
     this.placeFood();
   }
 
@@ -61,6 +74,13 @@ export class SnakeGame {
   togglePause(): void {
     if (!this.started || !this.alive) return;
     this.paused = !this.paused;
+  }
+
+  statusLabel(): string {
+    if (this.jackpotTicks > 0) return "狂暴";
+    if (this.hasteTicks > 0) return "加速";
+    if (this.shields > 0) return "護盾";
+    return "一般";
   }
 
   queueDirection(next: Direction): void {
@@ -98,6 +118,12 @@ export class SnakeGame {
       nextHead.x >= this.gridSize ||
       nextHead.y >= this.gridSize
     ) {
+      if (this.shields > 0) {
+        this.shields -= 1;
+        this.direction = OPPOSITE[this.direction];
+        this.decayBoosts();
+        return "move";
+      }
       return this.die();
     }
 
@@ -110,22 +136,47 @@ export class SnakeGame {
     this.snake.unshift(nextHead);
 
     if (eating) {
-      this.score += 10;
-      if (this.score > this.highScore) {
-        this.highScore = this.score;
-        writeHighScore(this.highScore);
-      }
+      this.applyFruit(this.food.kind);
       this.placeFood();
+      this.decayBoosts();
       return "eat";
     }
 
     this.snake.pop();
+    this.decayBoosts();
     return "move";
   }
 
   speedMs(): number {
-    const steps = Math.floor(this.score / 40);
-    return Math.max(70, 160 - steps * 12);
+    if (this.jackpotTicks > 0) return GAME_PARAMS.jackpotSpeedMs;
+    if (this.hasteTicks > 0) return GAME_PARAMS.hasteSpeedMs;
+    const steps = Math.floor(this.score / GAME_PARAMS.scoreSpeedStep);
+    return Math.max(
+      GAME_PARAMS.minSpeedMs,
+      GAME_PARAMS.baseSpeedMs - steps * GAME_PARAMS.scoreSpeedDrop,
+    );
+  }
+
+  setFoodForTest(food: Food): void {
+    this.food = food;
+  }
+
+  private applyFruit(kind: FruitKind): void {
+    const spec = fruitByKind(kind);
+    this.lastPickup = spec;
+    this.score += spec.score;
+    this.hasteTicks = Math.max(this.hasteTicks, spec.hasteTicks);
+    this.jackpotTicks = Math.max(this.jackpotTicks, spec.jackpotTicks);
+    this.shields += spec.shields;
+    if (this.score > this.highScore) {
+      this.highScore = this.score;
+      writeHighScore(this.highScore);
+    }
+  }
+
+  private decayBoosts(): void {
+    if (this.hasteTicks > 0) this.hasteTicks -= 1;
+    if (this.jackpotTicks > 0) this.jackpotTicks -= 1;
   }
 
   private die(): "die" {
@@ -142,7 +193,9 @@ export class SnakeGame {
         if (!occupied.has(`${x},${y}`)) free.push({ x, y });
       }
     }
-    this.food = free[Math.floor(Math.random() * free.length)] ?? { x: 0, y: 0 };
+    const spot = free[Math.floor(this.random() * free.length)] ?? { x: 0, y: 0 };
+    const spec = pickWeighted(FRUIT_TABLE, this.random);
+    this.food = { x: spot.x, y: spot.y, kind: spec.kind };
   }
 }
 

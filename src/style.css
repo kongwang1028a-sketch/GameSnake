@@ -40,7 +40,8 @@ body {
 
 .hud,
 .card,
-.dpad {
+.dpad,
+.paytable {
   background: var(--panel);
   border: 1px solid var(--line);
   box-shadow: var(--shadow);
@@ -51,9 +52,10 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 14px 16px;
+  gap: 10px;
+  padding: 12px 14px;
   border-radius: 20px;
+  flex-wrap: wrap;
 }
 
 .brand {
@@ -81,11 +83,13 @@ h1 {
 
 .stats {
   display: flex;
-  gap: 10px;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .stat {
-  min-width: 58px;
+  min-width: 44px;
   text-align: right;
 }
 
@@ -147,9 +151,67 @@ canvas {
   white-space: nowrap;
 }
 
-.play-hint.hidden {
+.play-hint.hidden,
+.pickup.hidden {
   display: none;
 }
+
+.pickup {
+  position: absolute;
+  left: 50%;
+  top: 16px;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(7, 20, 15, 0.82);
+  border: 1px solid var(--line);
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.paytable {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  border-radius: 20px;
+  padding: 14px 16px;
+}
+
+.paytable h2 {
+  margin: 0 0 10px;
+  font-size: 0.95rem;
+  letter-spacing: 0.08em;
+}
+
+.paytable ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.paytable li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+.dot.normal { background: #ff5c7a; }
+.dot.gold { background: #f5c542; }
+.dot.speed { background: #5cc8ff; }
+.dot.shield { background: #8b9bff; }
+.dot.jackpot { background: #ff9d3d; }
 
 .card {
   width: min(320px, 100%);
