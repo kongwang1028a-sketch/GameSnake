@@ -1,5 +1,7 @@
 # 貪食蛇
 
+線上遊玩：[kongwang1028a-sketch.github.io/GameSnake](https://kongwang1028a-sketch.github.io/GameSnake/)
+
 倉庫：[github.com/kongwang1028a-sketch/GameSnake](https://github.com/kongwang1028a-sketch/GameSnake)
 
 瀏覽器就能玩的經典貪食蛇：吃果實變長、撞牆或咬到自己就結束。分數會存進瀏覽器，下次進來還看得到最高分。
