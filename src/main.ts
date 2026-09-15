@@ -2,6 +2,14 @@ import "./style.css";
 import { GameAudio } from "./audio";
 import { SnakeGame, type Direction } from "./game";
 import { bindInput } from "./input";
+import {
+  DEFAULT_FRUIT_TABLE,
+  fruitPercents,
+  getFruitWeights,
+  resetFruitWeights,
+  setFruitWeights,
+  type FruitKind,
+} from "./params.ts";
 import { Renderer } from "./render";
 
 const canvas = document.querySelector<HTMLCanvasElement>("#board")!;
@@ -20,6 +28,8 @@ const lengthEl = document.querySelector<HTMLElement>("#length")!;
 const shieldsEl = document.querySelector<HTMLElement>("#shields")!;
 const statusEl = document.querySelector<HTMLElement>("#status")!;
 const pickupEl = document.querySelector<HTMLParagraphElement>("#pickup")!;
+const weightList = document.querySelector<HTMLUListElement>("#weight-list")!;
+const resetWeightsBtn = document.querySelector<HTMLButtonElement>("#reset-weights")!;
 
 const game = new SnakeGame();
 const renderer = new Renderer(canvas);
@@ -176,3 +186,44 @@ showStart();
 raf = requestAnimationFrame(loop);
 
 window.addEventListener("beforeunload", () => cancelAnimationFrame(raf));
+
+function renderWeightEditor(): void {
+  const weights = getFruitWeights();
+  const percents = fruitPercents();
+  weightList.innerHTML = DEFAULT_FRUIT_TABLE.map((item) => `
+    <li>
+      <i class="dot ${item.kind}"></i>
+      <label for="weight-${item.kind}">${item.name} · ${item.score}分</label>
+      <input id="weight-${item.kind}" type="number" min="0" max="999" inputmode="numeric" data-kind="${item.kind}" value="${weights[item.kind]}" />
+      <strong class="pct">${percents[item.kind]}%</strong>
+    </li>
+  `).join("");
+}
+
+function refreshPercents(syncInputs = false): void {
+  const percents = fruitPercents();
+  const weights = getFruitWeights();
+  weightList.querySelectorAll<HTMLInputElement>("input[data-kind]").forEach((input) => {
+    const kind = input.dataset.kind as FruitKind;
+    if (syncInputs) input.value = String(weights[kind]);
+    const pct = input.parentElement?.querySelector(".pct");
+    if (pct) pct.textContent = `${percents[kind]}%`;
+  });
+}
+
+weightList.addEventListener("input", (event) => {
+  const input = event.target;
+  if (!(input instanceof HTMLInputElement)) return;
+  const kind = input.dataset.kind as FruitKind;
+  setFruitWeights({ [kind]: Number(input.value) });
+  refreshPercents();
+});
+
+weightList.addEventListener("change", () => refreshPercents(true));
+
+resetWeightsBtn.addEventListener("click", () => {
+  resetFruitWeights();
+  renderWeightEditor();
+});
+
+renderWeightEditor();

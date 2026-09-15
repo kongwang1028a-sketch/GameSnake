@@ -179,9 +179,26 @@ canvas {
 }
 
 .paytable h2 {
-  margin: 0 0 10px;
+  margin: 0;
   font-size: 0.95rem;
   letter-spacing: 0.08em;
+}
+
+.paytable-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+#reset-weights {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.78rem;
 }
 
 .paytable ul {
@@ -189,15 +206,32 @@ canvas {
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 6px;
+  gap: 8px;
 }
 
 .paytable li {
-  display: flex;
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) 72px 3.2em;
   align-items: center;
   gap: 8px;
   color: var(--muted);
   font-size: 0.86rem;
+}
+
+.paytable input[type="number"] {
+  width: 72px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: rgba(7, 20, 15, 0.65);
+  color: var(--text);
+  padding: 6px 8px;
+  font: inherit;
+}
+
+.paytable .pct {
+  color: var(--text);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .dot {

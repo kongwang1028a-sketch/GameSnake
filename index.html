@@ -61,14 +61,12 @@
       </main>
 
       <section class="paytable" aria-label="果實獎池">
-        <h2>果實獎池</h2>
-        <ul>
-          <li><i class="dot normal"></i>普通 70% · 10 分</li>
-          <li><i class="dot gold"></i>金色 18% · 50 分</li>
-          <li><i class="dot speed"></i>加速 7% · 短暫變快</li>
-          <li><i class="dot shield"></i>護盾 4% · 可擋一次撞牆</li>
-          <li><i class="dot jackpot"></i>大獎 1% · 200 分並狂暴</li>
-        </ul>
+        <div class="paytable-head">
+          <h2>果實獎池</h2>
+          <button type="button" id="reset-weights">恢復預設</button>
+        </div>
+        <ul id="weight-list"></ul>
+        <p class="hint" id="weight-hint">改權重會立刻換成機率，存在這個瀏覽器裡。</p>
       </section>
 
       <nav class="dpad" aria-label="方向控制">

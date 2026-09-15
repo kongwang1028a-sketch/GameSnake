@@ -22,6 +22,14 @@ export function bindInput(options: {
   onConfirm: () => void;
 }): () => void {
   const onKey = (event: KeyboardEvent) => {
+    const target = event.target;
+    if (
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLTextAreaElement ||
+      target instanceof HTMLSelectElement
+    ) {
+      return;
+    }
     if (event.key === " " || event.code === "Space") {
       event.preventDefault();
       options.onPause();

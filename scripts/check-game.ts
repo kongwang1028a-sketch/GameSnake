@@ -1,5 +1,5 @@
 import { SnakeGame } from "../src/game.ts";
-import { FRUIT_TABLE, pickWeighted } from "../src/params.ts";
+import { FRUIT_TABLE, getFruitTable, pickWeighted, resetFruitWeights, setFruitWeights } from "../src/params.ts";
 
 function assert(condition: boolean, message: string): void {
   if (!condition) throw new Error(message);
@@ -25,6 +25,12 @@ assert(moving.snake[0].x === 10, "head should step right from the start cell");
 
 assert(pickWeighted(FRUIT_TABLE, () => 0).kind === "normal", "low rolls pick the common fruit");
 assert(pickWeighted(FRUIT_TABLE, () => 0.999).kind === "jackpot", "high rolls pick the jackpot fruit");
+
+resetFruitWeights();
+setFruitWeights({ normal: 0, gold: 0, speed: 0, shield: 0, jackpot: 10 });
+assert(pickWeighted(getFruitTable(), () => 0.5).kind === "jackpot", "custom weights should control the fruit pool");
+resetFruitWeights();
+assert(getFruitTable().find((item) => item.kind === "normal")?.weight === 70, "reset should restore default weights");
 
 const shielded = new SnakeGame(() => 0);
 shielded.start();

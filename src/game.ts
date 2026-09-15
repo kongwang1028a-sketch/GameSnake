@@ -1,4 +1,4 @@
-import { FRUIT_TABLE, GAME_PARAMS, fruitByKind, pickWeighted, type FruitKind, type FruitSpec } from "./params.ts";
+import { GAME_PARAMS, fruitByKind, getFruitTable, pickWeighted, type FruitKind, type FruitSpec } from "./params.ts";
 
 export type Direction = "up" | "down" | "left" | "right";
 export type Point = { x: number; y: number };
@@ -194,7 +194,7 @@ export class SnakeGame {
       }
     }
     const spot = free[Math.floor(this.random() * free.length)] ?? { x: 0, y: 0 };
-    const spec = pickWeighted(FRUIT_TABLE, this.random);
+    const spec = pickWeighted(getFruitTable(), this.random);
     this.food = { x: spot.x, y: spot.y, kind: spec.kind };
   }
 }

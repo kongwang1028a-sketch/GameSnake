@@ -12,7 +12,7 @@ export type FruitSpec = {
   shields: number;
 };
 
-export const FRUIT_TABLE: readonly FruitSpec[] = [
+export const DEFAULT_FRUIT_TABLE: readonly FruitSpec[] = [
   {
     kind: "normal",
     name: "普通果",
@@ -70,6 +70,87 @@ export const FRUIT_TABLE: readonly FruitSpec[] = [
   },
 ];
 
+export const FRUIT_TABLE = DEFAULT_FRUIT_TABLE;
+
+const WEIGHTS_KEY = "snake-fruit-weights";
+
+export type FruitWeights = Record<FruitKind, number>;
+
+function defaultWeights(): FruitWeights {
+  return {
+    normal: 70,
+    gold: 18,
+    speed: 7,
+    shield: 4,
+    jackpot: 1,
+  };
+}
+
+function readWeights(): FruitWeights {
+  const fallback = defaultWeights();
+  try {
+    const raw = globalThis.localStorage?.getItem(WEIGHTS_KEY);
+    if (!raw) return fallback;
+    const parsed = JSON.parse(raw) as Partial<FruitWeights>;
+    return sanitizeWeights({ ...fallback, ...parsed });
+  } catch {
+    return fallback;
+  }
+}
+
+function sanitizeWeights(input: FruitWeights): FruitWeights {
+  const next = defaultWeights();
+  (Object.keys(next) as FruitKind[]).forEach((kind) => {
+    const value = Number(input[kind]);
+    next[kind] = Number.isFinite(value) ? Math.max(0, Math.min(999, Math.round(value))) : 0;
+  });
+  if (Object.values(next).every((weight) => weight === 0)) return defaultWeights();
+  return next;
+}
+
+let currentWeights = readWeights();
+
+export function getFruitWeights(): FruitWeights {
+  return { ...currentWeights };
+}
+
+export function getFruitTable(): FruitSpec[] {
+  return DEFAULT_FRUIT_TABLE.map((item) => ({
+    ...item,
+    weight: currentWeights[item.kind],
+  }));
+}
+
+export function setFruitWeights(next: Partial<FruitWeights>): FruitWeights {
+  currentWeights = sanitizeWeights({ ...currentWeights, ...next });
+  try {
+    globalThis.localStorage?.setItem(WEIGHTS_KEY, JSON.stringify(currentWeights));
+  } catch {
+    // Ignore storage failures in private mode or non-browser tests.
+  }
+  return getFruitWeights();
+}
+
+export function resetFruitWeights(): FruitWeights {
+  currentWeights = defaultWeights();
+  try {
+    globalThis.localStorage?.removeItem(WEIGHTS_KEY);
+  } catch {
+    // Ignore storage failures.
+  }
+  return getFruitWeights();
+}
+
+export function fruitPercents(): Record<FruitKind, number> {
+  const table = getFruitTable();
+  const total = table.reduce((sum, item) => sum + item.weight, 0);
+  const percents = {} as Record<FruitKind, number>;
+  for (const item of table) {
+    percents[item.kind] = total === 0 ? 0 : Math.round((item.weight / total) * 100);
+  }
+  return percents;
+}
+
 export const GAME_PARAMS = {
   gridSize: 20,
   baseSpeedMs: 160,
@@ -81,7 +162,7 @@ export const GAME_PARAMS = {
 };
 
 export function fruitByKind(kind: FruitKind): FruitSpec {
-  return FRUIT_TABLE.find((item) => item.kind === kind) ?? FRUIT_TABLE[0];
+  return getFruitTable().find((item) => item.kind === kind) ?? getFruitTable()[0];
 }
 
 export function pickWeighted<T extends { weight: number }>(
@@ -98,7 +179,5 @@ export function pickWeighted<T extends { weight: number }>(
 }
 
 export function fruitChance(kind: FruitKind): number {
-  const total = FRUIT_TABLE.reduce((sum, item) => sum + item.weight, 0);
-  const spec = fruitByKind(kind);
-  return Math.round((spec.weight / total) * 100);
+  return fruitPercents()[kind];
 }
