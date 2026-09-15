@@ -32,3 +32,7 @@ npm run dev
 npm run build
 npm run preview
 ```
+
+## 可見性
+
+遊戲頁已加上 `noindex` 與 `robots.txt`，請搜尋引擎不要收錄。知道網址的人仍可打開。倉庫若維持公開，GitHub 上還是搜得到專案名稱。
