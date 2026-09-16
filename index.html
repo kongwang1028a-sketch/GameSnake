@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/GameSnake/favicon.svg" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <meta name="theme-color" content="#07140f" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>貪食蛇</title>
+    <script type="module" crossorigin src="/GameSnake/assets/index-BZmkb_il.js"></script>
+    <link rel="stylesheet" crossorigin href="/GameSnake/assets/index-BzPtIEer.css">
+  </head>
+  <body>
+    <div id="app">
+      <header class="hud">
+        <div class="brand">
+          <span class="logo" aria-hidden="true">◎</span>
+          <h1>貪食蛇</h1>
+        </div>
+        <div class="stats">
+          <div class="stat">
+            <span>分數</span>
+            <strong id="score">0</strong>
+          </div>
+          <div class="stat">
+            <span>最高</span>
+            <strong id="high">0</strong>
+          </div>
+          <div class="stat">
+            <span>長度</span>
+            <strong id="length">3</strong>
+          </div>
+          <div class="stat">
+            <span>護盾</span>
+            <strong id="shields">0</strong>
+          </div>
+          <div class="stat">
+            <span>狀態</span>
+            <strong id="status">一般</strong>
+          </div>
+        </div>
+      </header>
+
+      <main class="stage">
+        <div class="board-wrap">
+          <canvas id="board" width="480" height="480" aria-label="貪食蛇遊戲畫面"></canvas>
+          <div id="overlay" class="overlay" role="dialog" aria-modal="true">
+            <div class="card">
+              <p class="kicker" id="overlay-kicker">機率街機</p>
+              <h2 id="overlay-title">貪食蛇</h2>
+              <p id="overlay-msg">吃到橙色特殊果會進入短局機率迷宮。沿路開三個寶箱，用同一套權重開獎。</p>
+              <p id="overlay-score" class="overlay-score hidden"></p>
+              <button id="primary-btn" type="button">開始遊戲</button>
+              <p class="hint" id="overlay-hint">開始後先按方向鍵，蛇才會出發</p>
+            </div>
+          </div>
+          <p id="play-hint" class="play-hint hidden">按方向鍵或 WASD 開始移動</p>
+          <p id="pickup" class="pickup hidden"></p>
+        </div>
+      </main>
+
+      <section class="paytable" aria-label="果實獎池">
+        <div class="paytable-head">
+          <h2>果實獎池</h2>
+          <button type="button" id="reset-weights">恢復預設</button>
+        </div>
+        <ul id="weight-list"></ul>
+        <p class="hint" id="weight-hint">改權重會立刻換成機率，存在這個瀏覽器裡。</p>
+      </section>
+
+      <nav class="dpad" aria-label="方向控制">
+        <button type="button" data-dir="up" class="pad pad-up">▲</button>
+        <button type="button" data-dir="left" class="pad pad-left">◀</button>
+        <button type="button" data-dir="down" class="pad pad-down">▼</button>
+        <button type="button" data-dir="right" class="pad pad-right">▶</button>
+        <button type="button" id="pause-btn" class="pad pad-pause">暫停</button>
+      </nav>
+    </div>
+  </body>
+</html>
