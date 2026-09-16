@@ -1,4 +1,5 @@
 import type { Direction, SnakeGame } from "./game";
+import type { ChanceMaze } from "./maze.ts";
 import { fruitByKind } from "./params.ts";
 
 const COLORS = {
@@ -38,6 +39,63 @@ export class Renderer {
     this.drawBoard(cssSize, cell, game.gridSize, game.jackpotTicks > 0);
     this.drawFood(game, cell, now);
     this.drawSnake(game, cell);
+  }
+
+  drawMaze(maze: ChanceMaze, now: number): void {
+    const cssSize = this.canvas.clientWidth;
+    this.ctx.clearRect(0, 0, cssSize, cssSize);
+    this.roundRect(0, 0, cssSize, cssSize, 18);
+    this.ctx.fillStyle = "#120d18";
+    this.ctx.fill();
+
+    const cell = cssSize / Math.max(maze.cols, maze.rows);
+    const offsetX = (cssSize - maze.cols * cell) / 2;
+    const offsetY = (cssSize - maze.rows * cell) / 2;
+
+    for (let y = 0; y < maze.rows; y += 1) {
+      for (let x = 0; x < maze.cols; x += 1) {
+        const px = offsetX + x * cell;
+        const py = offsetY + y * cell;
+        if (maze.isWall(x, y)) {
+          this.ctx.fillStyle = "#1c1528";
+          this.ctx.fillRect(px, py, cell + 0.5, cell + 0.5);
+          continue;
+        }
+        this.ctx.fillStyle = "#24182f";
+        this.ctx.fillRect(px, py, cell + 0.5, cell + 0.5);
+      }
+    }
+
+    const exitPulse = 0.45 + Math.sin(now / 160) * 0.2;
+    this.ctx.fillStyle = `rgba(124, 255, 107, ${exitPulse})`;
+    this.ctx.beginPath();
+    this.ctx.arc(
+      offsetX + maze.exit.x * cell + cell / 2,
+      offsetY + maze.exit.y * cell + cell / 2,
+      cell * 0.28,
+      0,
+      Math.PI * 2,
+    );
+    this.ctx.fill();
+
+    maze.chests.forEach((chest) => {
+      const cx = offsetX + chest.x * cell + cell / 2;
+      const cy = offsetY + chest.y * cell + cell / 2;
+      this.ctx.fillStyle = chest.opened ? (chest.prize?.color ?? "#665") : "#f5c542";
+      this.roundRect(cx - cell * 0.28, cy - cell * 0.28, cell * 0.56, cell * 0.56, 4);
+      this.ctx.fill();
+    });
+
+    const hx = offsetX + maze.player.x * cell + cell / 2;
+    const hy = offsetY + maze.player.y * cell + cell / 2;
+    this.ctx.fillStyle = "#c8ff8a";
+    this.roundRect(hx - cell * 0.32, hy - cell * 0.32, cell * 0.64, cell * 0.64, 6);
+    this.ctx.fill();
+    this.ctx.fillStyle = "#07140f";
+    this.ctx.beginPath();
+    this.ctx.arc(hx - cell * 0.1, hy - cell * 0.04, cell * 0.07, 0, Math.PI * 2);
+    this.ctx.arc(hx + cell * 0.1, hy - cell * 0.04, cell * 0.07, 0, Math.PI * 2);
+    this.ctx.fill();
   }
 
   private drawBoard(size: number, cell: number, gridSize: number, rushing: boolean): void {

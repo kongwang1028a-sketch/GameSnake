@@ -35,6 +35,7 @@ export class SnakeGame {
   hasteTicks = 0;
   jackpotTicks = 0;
   lastPickup: FruitSpec | null = null;
+  inMaze = false;
 
   private pending: Direction[] = [];
   private readonly random: () => number;
@@ -62,6 +63,7 @@ export class SnakeGame {
     this.hasteTicks = 0;
     this.jackpotTicks = 0;
     this.lastPickup = null;
+    this.inMaze = false;
     this.placeFood();
   }
 
@@ -77,6 +79,7 @@ export class SnakeGame {
   }
 
   statusLabel(): string {
+    if (this.inMaze) return "迷宮";
     if (this.jackpotTicks > 0) return "狂暴";
     if (this.hasteTicks > 0) return "加速";
     if (this.shields > 0) return "護盾";
@@ -84,7 +87,7 @@ export class SnakeGame {
   }
 
   queueDirection(next: Direction): void {
-    if (!this.started || !this.alive || this.paused) return;
+    if (!this.started || !this.alive || this.paused || this.inMaze) return;
     if (this.awaitingInput) {
       if (next === OPPOSITE[this.direction]) return;
       this.direction = next;
@@ -97,8 +100,8 @@ export class SnakeGame {
     this.pending.push(next);
   }
 
-  tick(): "move" | "eat" | "die" | "idle" {
-    if (!this.started || !this.alive || this.paused || this.awaitingInput) return "idle";
+  tick(): "move" | "eat" | "die" | "idle" | "maze" {
+    if (!this.started || !this.alive || this.paused || this.awaitingInput || this.inMaze) return "idle";
 
     while (this.pending.length > 0) {
       const next = this.pending.shift()!;
@@ -136,6 +139,13 @@ export class SnakeGame {
     this.snake.unshift(nextHead);
 
     if (eating) {
+      if (this.food.kind === "jackpot") {
+        this.lastPickup = fruitByKind("jackpot");
+        this.placeFood();
+        this.decayBoosts();
+        this.inMaze = true;
+        return "maze";
+      }
       this.applyFruit(this.food.kind);
       this.placeFood();
       this.decayBoosts();
@@ -155,6 +165,23 @@ export class SnakeGame {
       GAME_PARAMS.minSpeedMs,
       GAME_PARAMS.baseSpeedMs - steps * GAME_PARAMS.scoreSpeedDrop,
     );
+  }
+
+  applyPrize(spec: FruitSpec): void {
+    this.score += spec.score;
+    this.hasteTicks = Math.max(this.hasteTicks, spec.hasteTicks);
+    this.jackpotTicks = Math.max(this.jackpotTicks, spec.jackpotTicks);
+    this.shields += spec.shields;
+    this.lastPickup = spec;
+    if (this.score > this.highScore) {
+      this.highScore = this.score;
+      writeHighScore(this.highScore);
+    }
+  }
+
+  leaveMaze(): void {
+    this.inMaze = false;
+    this.awaitingInput = true;
   }
 
   setFoodForTest(food: Food): void {

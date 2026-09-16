@@ -148,7 +148,9 @@ canvas {
   color: var(--text);
   font-size: 0.85rem;
   pointer-events: none;
-  white-space: nowrap;
+  white-space: normal;
+  text-align: center;
+  max-width: 90%;
 }
 
 .play-hint.hidden,

@@ -1,3 +1,4 @@
+import { ChanceMaze, mazePrize } from "../src/maze.ts";
 import { SnakeGame } from "../src/game.ts";
 import { FRUIT_TABLE, getFruitTable, pickWeighted, resetFruitWeights, setFruitWeights } from "../src/params.ts";
 
@@ -30,7 +31,7 @@ resetFruitWeights();
 setFruitWeights({ normal: 0, gold: 0, speed: 0, shield: 0, jackpot: 10 });
 assert(pickWeighted(getFruitTable(), () => 0.5).kind === "jackpot", "custom weights should control the fruit pool");
 resetFruitWeights();
-assert(getFruitTable().find((item) => item.kind === "normal")?.weight === 70, "reset should restore default weights");
+assert(getFruitTable().find((item) => item.kind === "normal")?.weight === 67, "reset should restore default weights");
 
 const shielded = new SnakeGame(() => 0);
 shielded.start();
@@ -43,13 +44,26 @@ assert(shielded.alive, "wall bounce must not kill the snake");
 assert(shielded.shields === 0, "the shield charge should be consumed");
 assert(shielded.direction === "left", "the snake should reverse after a shielded wall hit");
 
-const jackpot = new SnakeGame(() => 0);
-jackpot.start();
-jackpot.queueDirection("right");
-jackpot.setFoodForTest({ x: 10, y: 10, kind: "jackpot" });
-assert(jackpot.tick() === "eat", "the snake should eat a jackpot on the next cell");
-assert(jackpot.score === 200, "jackpot fruit should award 200");
-assert(jackpot.jackpotTicks > 0, "jackpot should start a rush");
+const special = new SnakeGame(() => 0);
+special.start();
+special.queueDirection("right");
+special.setFoodForTest({ x: 10, y: 10, kind: "jackpot" });
+assert(special.tick() === "maze", "special fruit should enter the probability maze");
+assert(special.inMaze, "snake should freeze while the maze is active");
+assert(special.score === 0, "maze entry should not award jackpot points immediately");
+
+const maze = new ChanceMaze(() => 0);
+maze.start(0);
+assert(maze.chests.length === 3, "maze should have three chests");
+maze.move("right");
+maze.move("right");
+const chestOpen = maze.move("right");
+assert(chestOpen.prize?.kind === "normal", "the first chest should roll from the weight table");
+assert(maze.openedCount() === 1, "walking onto a chest should open it");
+assert(mazePrize("jackpot").score === 200, "a jackpot chest should pay 200 without nesting another maze");
+
+maze.update(30_001);
+assert(maze.finished && maze.finishReason === "time", "the maze should end when time runs out");
 
 let died = false;
 const wall = new SnakeGame();

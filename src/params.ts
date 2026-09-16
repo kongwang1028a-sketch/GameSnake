@@ -16,7 +16,7 @@ export const DEFAULT_FRUIT_TABLE: readonly FruitSpec[] = [
   {
     kind: "normal",
     name: "普通果",
-    weight: 70,
+    weight: 67,
     score: 10,
     color: "#ff5c7a",
     glow: "rgba(255, 92, 122, 0.45)",
@@ -59,13 +59,13 @@ export const DEFAULT_FRUIT_TABLE: readonly FruitSpec[] = [
   },
   {
     kind: "jackpot",
-    name: "大獎果",
-    weight: 1,
-    score: 200,
+    name: "特殊果",
+    weight: 3,
+    score: 0,
     color: "#ff9d3d",
     glow: "rgba(255, 157, 61, 0.55)",
     hasteTicks: 0,
-    jackpotTicks: 40,
+    jackpotTicks: 0,
     shields: 0,
   },
 ];
@@ -78,11 +78,11 @@ export type FruitWeights = Record<FruitKind, number>;
 
 function defaultWeights(): FruitWeights {
   return {
-    normal: 70,
+    normal: 67,
     gold: 18,
     speed: 7,
     shield: 4,
-    jackpot: 1,
+    jackpot: 3,
   };
 }
 
@@ -159,6 +159,7 @@ export const GAME_PARAMS = {
   scoreSpeedDrop: 12,
   hasteSpeedMs: 78,
   jackpotSpeedMs: 52,
+  mazeDurationMs: 30_000,
 };
 
 export function fruitByKind(kind: FruitKind): FruitSpec {

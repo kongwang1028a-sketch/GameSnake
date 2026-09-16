@@ -10,6 +10,7 @@ import {
   setFruitWeights,
   type FruitKind,
 } from "./params.ts";
+import { ChanceMaze } from "./maze.ts";
 import { Renderer } from "./render";
 
 const canvas = document.querySelector<HTMLCanvasElement>("#board")!;
@@ -34,6 +35,7 @@ const resetWeightsBtn = document.querySelector<HTMLButtonElement>("#reset-weight
 const game = new SnakeGame();
 const renderer = new Renderer(canvas);
 const audio = new GameAudio();
+let maze: ChanceMaze | null = null;
 
 let lastTick = 0;
 let raf = 0;
@@ -44,18 +46,27 @@ function updateHud(): void {
   lengthEl.textContent = String(game.snake.length);
   shieldsEl.textContent = String(game.shields);
   statusEl.textContent = game.statusLabel();
-  pauseBtn.textContent = game.paused ? "繼續" : "暫停";
+  pauseBtn.textContent = (maze?.isPaused() ?? game.paused) ? "繼續" : "暫停";
+  if (maze && !maze.finished) {
+    const seconds = Math.ceil(maze.remainingMs(performance.now()) / 1000);
+    playHint.classList.remove("hidden");
+    playHint.textContent = `迷宮 ${seconds} 秒 · 寶箱 ${maze.openedCount()}/3 · 走到綠點離開`;
+    return;
+  }
   playHint.classList.toggle(
     "hidden",
     !game.started || !game.alive || game.paused || !game.awaitingInput,
   );
+  if (game.awaitingInput && game.started && game.alive && !game.paused) {
+    playHint.textContent = "按方向鍵或 WASD 開始移動";
+  }
 }
 
 function showStart(): void {
   overlay.classList.remove("hidden");
   overlayKicker.textContent = "機率街機";
   overlayTitle.textContent = "貪食蛇";
-  overlayMsg.textContent = "果實用權重抽出。普通、金色、加速、護盾、大獎效果都不同。";
+  overlayMsg.textContent = "吃到橙色特殊果會進入短局機率迷宮。沿路開三個寶箱，用同一套權重開獎。";
   overlayScore.classList.add("hidden");
   overlayHint.textContent = "開始後先按方向鍵或螢幕按鈕，蛇才會出發";
   primaryBtn.textContent = "開始遊戲";
@@ -91,7 +102,7 @@ function hideOverlay(): void {
 function showPickup(): void {
   const pickup = game.lastPickup;
   if (!pickup) return;
-  pickupEl.textContent = `${pickup.name} +${pickup.score}`;
+  pickupEl.textContent = pickup.score > 0 ? `${pickup.name} +${pickup.score}` : pickup.name;
   pickupEl.style.color = pickup.color;
   pickupEl.classList.remove("hidden");
   window.clearTimeout(Number(pickupEl.dataset.timer));
@@ -102,6 +113,7 @@ function showPickup(): void {
 function startGame(): void {
   audio.unlock();
   audio.start();
+  maze = null;
   game.start();
   lastTick = performance.now();
   hideOverlay();
@@ -110,6 +122,10 @@ function startGame(): void {
 
 function confirmAction(): void {
   audio.unlock();
+  if (maze && !maze.finished) {
+    if (maze.isPaused()) pauseAction();
+    return;
+  }
   if (!game.started || !game.alive) {
     startGame();
     return;
@@ -122,6 +138,22 @@ function confirmAction(): void {
 }
 
 function pauseAction(): void {
+  if (maze && !maze.finished) {
+    maze.togglePause(performance.now());
+    if (maze.isPaused()) {
+      overlay.classList.remove("hidden");
+      overlayKicker.textContent = "迷宮暫停";
+      overlayTitle.textContent = "先停一下";
+      overlayMsg.textContent = "再按暫停就能繼續開寶箱。";
+      overlayScore.classList.add("hidden");
+      overlayHint.textContent = `已開 ${maze.openedCount()}/3 個寶箱`;
+      primaryBtn.textContent = "繼續迷宮";
+    } else {
+      hideOverlay();
+    }
+    updateHud();
+    return;
+  }
   if (!game.started || !game.alive) return;
   game.togglePause();
   if (game.paused) showPause();
@@ -129,7 +161,33 @@ function pauseAction(): void {
   updateHud();
 }
 
+function enterMaze(now: number): void {
+  maze = new ChanceMaze();
+  maze.start(now);
+  hideOverlay();
+  updateHud();
+}
+
+function finishMaze(): void {
+  maze = null;
+  game.leaveMaze();
+  hideOverlay();
+  updateHud();
+}
+
 function onDirection(dir: Direction): void {
+  if (maze && !maze.finished) {
+    if (maze.isPaused()) return;
+    const result = maze.move(dir);
+    if (result.prize) {
+      game.applyPrize(result.prize);
+      audio.eat(result.prize.kind);
+      showPickup();
+    }
+    if (result.finished) finishMaze();
+    updateHud();
+    return;
+  }
   if (!game.started || !game.alive) return;
   if (game.paused) {
     game.togglePause();
@@ -144,6 +202,14 @@ function onDirection(dir: Direction): void {
 }
 
 function loop(now: number): void {
+  if (maze) {
+    maze.update(now);
+    renderer.drawMaze(maze, now);
+    if (maze.finished) finishMaze();
+    updateHud();
+    raf = requestAnimationFrame(loop);
+    return;
+  }
   renderer.draw(game, now);
   if (game.started && game.alive && !game.paused && now - lastTick >= game.speedMs()) {
     const result = game.tick();
@@ -151,6 +217,11 @@ function loop(now: number): void {
     if (result === "eat") {
       audio.eat(game.lastPickup?.kind ?? "normal");
       showPickup();
+    }
+    if (result === "maze") {
+      audio.eat("jackpot");
+      showPickup();
+      enterMaze(now);
     }
     if (result === "die") {
       audio.die();
@@ -193,7 +264,7 @@ function renderWeightEditor(): void {
   weightList.innerHTML = DEFAULT_FRUIT_TABLE.map((item) => `
     <li>
       <i class="dot ${item.kind}"></i>
-      <label for="weight-${item.kind}">${item.name} · ${item.score}分</label>
+      <label for="weight-${item.kind}">${item.kind === "jackpot" ? `${item.name} · 迷宮` : `${item.name} · ${item.score}分`}</label>
       <input id="weight-${item.kind}" type="number" min="0" max="999" inputmode="numeric" data-kind="${item.kind}" value="${weights[item.kind]}" />
       <strong class="pct">${percents[item.kind]}%</strong>
     </li>
